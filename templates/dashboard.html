@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>reconsole · dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="topbar">
+    <span class="brand">recon<span class="dot">·</span>sole<span class="os">kali recon console</span></span>
+    <nav class="nav">
+        <a href="/">Console</a>
+        <a href="/dashboard" class="active">Dashboard</a>
+    </nav>
+    <span class="credit">
+        <svg class="unicorn" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="unicorn">
+            <path d="M44 22 C 55 28, 55 46, 45 52 C 50 43, 50 33, 42 29 Z" fill="#e8a33d"/>
+            <path d="M22 26 L26 12 L33 24 Z" fill="#ffffff"/>
+            <circle cx="32" cy="36" r="16" fill="#ffffff"/>
+            <ellipse cx="20" cy="42" rx="9" ry="7" fill="#ffffff"/>
+            <path d="M28 22 L34 2 L40 22 Z" fill="#e8a33d"/>
+            <path d="M31 16 L37 16 M30 19 L38 19" stroke="#c47f1e" stroke-width="1.4"/>
+            <circle cx="28" cy="34" r="2.3" fill="#2a1c0a"/>
+            <circle cx="15" cy="44" r="1.5" fill="#2a1c0a"/>
+        </svg>
+        Created by Flexmaster
+    </span>
+</div>
+
+<div class="wrap">
+    <div class="dash-grid">
+        <div class="panel">
+            <h2>Open ports &amp; services — nmap</h2>
+            <div id="nmap"></div>
+        </div>
+        <div class="panel">
+            <h2>SMB findings — smbmap</h2>
+            <div id="smbmap"></div>
+        </div>
+        <div class="panel">
+            <h2>Web content — gobuster</h2>
+            <div id="gobuster"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function ipGroupHeader(ip, count) {
+    return `<div class="iphead"><span>${esc(ip)}</span><span class="count">${count}</span></div>`;
+}
+
+function runCell(runId) {
+    return `<td><a href="/output/${runId}" target="_blank">#${runId}</a></td>`;
+}
+
+function renderNmap(grouped) {
+    const el = document.getElementById("nmap");
+    const ips = Object.keys(grouped);
+    if (!ips.length) { el.innerHTML = '<p class="empty">No open ports recorded yet.</p>'; return; }
+    el.innerHTML = ips.map(ip => {
+        const rows = grouped[ip].map(p => `<tr>
+            ${runCell(p.run_id)}
+            <td class="port-open">${p.port}/${p.protocol || ''}</td>
+            <td>${esc(p.service || '')}</td>
+            <td>${esc([p.product, p.version].filter(Boolean).join(' '))}</td>
+        </tr>`).join("");
+        return `<div class="ipgroup">
+            ${ipGroupHeader(ip, grouped[ip].length + ' open')}
+            <table><tr><th>Run</th><th>Port</th><th>Service</th><th>Version</th></tr>${rows}</table>
+        </div>`;
+    }).join("");
+}
+
+function renderFindings(grouped, elId, cols) {
+    const el = document.getElementById(elId);
+    const ips = Object.keys(grouped);
+    if (!ips.length) { el.innerHTML = '<p class="empty">No findings yet.</p>'; return; }
+    el.innerHTML = ips.map(ip => {
+        const rows = grouped[ip].map(f => `<tr>
+            ${runCell(f.run_id)}
+            <td>${esc(f.title)}</td><td>${esc(f.detail || '')}</td>
+        </tr>`).join("");
+        return `<div class="ipgroup">
+            ${ipGroupHeader(ip, grouped[ip].length)}
+            <table><tr><th>Run</th><th>${cols[0]}</th><th>${cols[1]}</th></tr>${rows}</table>
+        </div>`;
+    }).join("");
+}
+
+async function load() {
+    const d = await (await fetch("/api/dashboard")).json();
+    renderNmap(d.nmap);
+    renderFindings(d.smbmap, "smbmap", ["Share", "Permissions"]);
+    renderFindings(d.gobuster, "gobuster", ["Path", "Detail"]);
+}
+
+load();
+setInterval(load, 4000);
+</script>
+</body>
+</html>
