@@ -23,6 +23,7 @@ import html as _html
 import os
 import queue
 import re
+import shutil
 import threading
 
 from flask import Flask, Response, jsonify, render_template, request
@@ -185,6 +186,55 @@ def api_stop_all():
     for rid in stopped:
         db.finish_run(rid, "stopped")
     return jsonify({"stopped_runs": len(stopped), "drained_jobs": drained})
+
+
+@app.route("/api/run/<int:run_id>/delete", methods=["POST"])
+def api_delete_run(run_id):
+    """Remove a single run: stop it if running, delete its row + results, and
+    delete its output/xml files from disk."""
+    run = db.get_run(run_id)
+    if not run:
+        return jsonify({"error": "unknown run"}), 404
+    if run["status"] == "running":
+        scanner.stop_run(run_id)
+    outfile = db.delete_run(run_id)
+    if outfile:
+        d = os.path.dirname(outfile)
+        for p in (outfile, os.path.join(d, f"run_{run_id}.xml")):
+            try:
+                if os.path.exists(p):
+                    os.remove(p)
+            except OSError:
+                pass
+    return jsonify({"deleted": run_id})
+
+
+@app.route("/api/reset", methods=["POST"])
+def api_reset():
+    """Wipe ALL results: stop everything, clear the database, and delete every
+    per-scan output file."""
+    # 1) stop anything queued or running
+    while True:
+        try:
+            scan_id = _job_queue.get_nowait()[0]
+        except queue.Empty:
+            break
+        scanner.cancel_scan(scan_id)
+        _job_queue.task_done()
+    for s in db.list_scans():
+        if s["status"] in ("running", "queued"):
+            scanner.cancel_scan(s["id"])
+    scanner.kill_all_procs()
+    # 2) wipe the database
+    db.reset_all()
+    # 3) wipe the runs directory
+    try:
+        if os.path.isdir(scanner.RUNS_DIR):
+            shutil.rmtree(scanner.RUNS_DIR)
+        os.makedirs(scanner.RUNS_DIR, exist_ok=True)
+    except OSError:
+        pass
+    return jsonify({"reset": True})
 
 
 @app.route("/output/<int:run_id>")

@@ -21,8 +21,9 @@ a:hover { text-decoration:underline; }
 .nav a { color:var(--muted); font-size:14px; padding:4px 0; border-bottom:2px solid transparent; }
 .nav a.active { color:var(--text); border-bottom-color:var(--amber); }
 .credit { margin-left:auto; color:var(--muted); font-size:13px; font-family:var(--mono); display:flex; align-items:center; gap:8px; }
-.unicorn { width:26px; height:26px; transform-origin:50% 50%; animation: uspin 3.5s linear infinite; }
-@keyframes uspin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.lion { width:34px; height:34px; border-radius:50%; object-fit:cover; transform-origin:50% 50%;
+    animation: lionspin 3.5s linear infinite; box-shadow:0 0 0 2px var(--amber); }
+@keyframes lionspin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 
 .wrap { max-width:1800px; margin:0 auto; padding:28px 36px; }
 .grid { display:grid; gap:20px; }
@@ -63,15 +64,21 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 
 /* runs list */
 .panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.head-actions { display:flex; gap:10px; align-items:center; }
 .stopall { width:auto; margin:0; padding:6px 14px; background:transparent; color:var(--red);
     border:1px solid rgba(229,83,75,.5); border-radius:6px; font-weight:600; font-size:12px; }
 .stopall:hover { background:rgba(229,83,75,.12); filter:none; }
+.resetbtn { width:auto; margin:0; padding:7px 18px; background:var(--red); color:#fff;
+    border:none; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; }
+.resetbtn:hover { filter:brightness(1.1); }
 .runs-panel { display:flex; flex-direction:column; min-height:0; }
 .runs { font-family:var(--mono); font-size:13px; flex:1 1 auto; min-height:0; overflow-y:auto; }
 .run-item { border-bottom:1px solid var(--line); padding-bottom:4px; }
-.run-row { display:grid; grid-template-columns:46px 1fr 92px 76px 60px; gap:10px; align-items:center;
+.run-row { display:grid; grid-template-columns:40px 1fr 86px 70px 52px 26px; gap:10px; align-items:center;
     padding:9px 4px; }
 .run-row:hover { background:var(--surface-2); }
+.rmbtn { color:var(--muted); text-align:center; cursor:pointer; font-size:14px; line-height:1; }
+.rmbtn:hover { color:var(--red); text-decoration:none; }
 .tail { margin:2px 4px 8px; padding:8px 10px; background:var(--ink); border:1px solid var(--line);
     border-radius:6px; font-family:var(--mono); font-size:12px; line-height:1.4; color:var(--muted);
     max-height:352px; overflow:auto; white-space:pre; }   /* ~20 lines tall, scrolls for the rest */

@@ -158,6 +158,28 @@ def get_run(run_id: int):
         return dict(row) if row else None
 
 
+def delete_run(run_id: int):
+    """Remove a single run and its parsed results. Returns the output_file path
+    (so the caller can delete the file on disk)."""
+    with _write_lock, get_conn() as conn:
+        row = conn.execute("SELECT output_file FROM runs WHERE id=?", (run_id,)).fetchone()
+        outfile = row["output_file"] if row else None
+        conn.execute("DELETE FROM ports WHERE run_id=?", (run_id,))
+        conn.execute("DELETE FROM findings WHERE run_id=?", (run_id,))
+        conn.execute("DELETE FROM runs WHERE id=?", (run_id,))
+    return outfile
+
+
+def reset_all() -> None:
+    """Wipe every scan, run, port and finding. (FK cascade would handle most of
+    this from scans, but we clear all tables explicitly to be safe.)"""
+    with _write_lock, get_conn() as conn:
+        conn.execute("DELETE FROM findings")
+        conn.execute("DELETE FROM ports")
+        conn.execute("DELETE FROM runs")
+        conn.execute("DELETE FROM scans")
+
+
 # ---- results ----
 def add_port(scan_id, run_id, ip, port, protocol, state, service, product, version) -> None:
     with _write_lock, get_conn() as conn:

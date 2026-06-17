@@ -14,16 +14,7 @@
         <a href="/dashboard">Dashboard</a>
     </nav>
     <span class="credit">
-        <svg class="unicorn" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="unicorn">
-            <path d="M44 22 C 55 28, 55 46, 45 52 C 50 43, 50 33, 42 29 Z" fill="#e8a33d"/>
-            <path d="M22 26 L26 12 L33 24 Z" fill="#ffffff"/>
-            <circle cx="32" cy="36" r="16" fill="#ffffff"/>
-            <ellipse cx="20" cy="42" rx="9" ry="7" fill="#ffffff"/>
-            <path d="M28 22 L34 2 L40 22 Z" fill="#e8a33d"/>
-            <path d="M31 16 L37 16 M30 19 L38 19" stroke="#c47f1e" stroke-width="1.4"/>
-            <circle cx="28" cy="34" r="2.3" fill="#2a1c0a"/>
-            <circle cx="15" cy="44" r="1.5" fill="#2a1c0a"/>
-        </svg>
+        <img class="lion" src="/static/lion.jpg" alt="lion">
         Created by Flexmaster
     </span>
 </div>
@@ -77,7 +68,10 @@
     <div class="panel runs-panel">
         <div class="panel-head">
             <h2 style="margin:0">Runs <span class="fmt">(auto-refreshing — “stop ■” halts a task)</span></h2>
-            <button class="stopall" id="stopAll" title="Stop every running and queued task">Stop all</button>
+            <div class="head-actions">
+                <button class="stopall" id="stopAll" title="Stop every running and queued task">Stop all</button>
+                <button class="resetbtn" id="resetAll" title="Wipe all results">Reset</button>
+            </div>
         </div>
         <div class="runs" id="runs"><p class="empty">No runs yet.</p></div>
     </div>
@@ -183,6 +177,7 @@ function buildRunItem(r) {
             <span class="status"></span>
             <a class="outbtn" target="_blank"></a>
             <span class="stopcell"></span>
+            <a class="rmbtn" title="Remove this run" onclick="removeRun(${r.id})">✕</a>
         </div>
         <div class="run-err fmt" style="color:var(--red);padding:0 4px 6px;display:none"></div>
         <pre class="tail" id="tail-${r.id}">(no output yet)</pre>`;
@@ -267,11 +262,32 @@ async function stopRun(id) {
     refresh();
 }
 
+async function removeRun(id) {
+    await fetch(`/api/run/${id}/delete`, { method: "POST" });
+    const el = document.getElementById('run-' + id);
+    if (el) el.remove();
+    tailLoadedOnce.delete(String(id));
+    tailFinalized.delete(String(id));
+    if (!document.querySelector('.run-item')) {
+        $("runs").innerHTML = '<p class="empty">No runs yet.</p>';
+    }
+}
+
 $("stopAll").addEventListener("click", async () => {
     $("stopAll").disabled = true;
     await fetch("/api/stop_all", { method: "POST" });
     $("stopAll").disabled = false;
     refresh();
+});
+
+$("resetAll").addEventListener("click", async () => {
+    if (!confirm("Wipe ALL results — every run, finding and output file? This cannot be undone.")) return;
+    $("resetAll").disabled = true;
+    await fetch("/api/reset", { method: "POST" });
+    tailLoadedOnce.clear();
+    tailFinalized.clear();
+    $("runs").innerHTML = '<p class="empty">No runs yet.</p>';
+    $("resetAll").disabled = false;
 });
 
 loadEnv(); loadTools(); loadPresets(); refresh();

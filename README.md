@@ -50,6 +50,8 @@ output**, stores everything in SQLite, and rolls the results up into a
   open/download link.
 - **Stop control** — stop a single task, Stop-all, and automatic kill of every
   child process on shutdown.
+- **Manage results** — remove an individual run, or a big **Reset** to wipe
+  every result and output file.
 - **Dashboard** — open ports & services (nmap), SMB shares (smbmap) and web
   paths (gobuster), grouped per target, each row linking back to its run.
 - **No timeouts** — a full `-p-`/`-A` nmap scan can run for as long as it needs.
@@ -269,8 +271,9 @@ All in [`scanner.py`](scanner.py) near the top:
 
 There is **no run timeout** — scans run until they finish or you stop them.
 
-Cosmetic: the spinning unicorn speed/size is in `static/style.css` (`.unicorn`,
-`@keyframes uspin`).
+Cosmetic: the spinning lion logo is `static/lion.jpg`, animated in
+`static/style.css` (`.lion`, `@keyframes lionspin` — a 3.5s `rotateY` spin with
+an amber ring).
 
 ---
 

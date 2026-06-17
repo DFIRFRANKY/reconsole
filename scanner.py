@@ -208,6 +208,8 @@ PRESETS = [
     # gobuster against IP target(s) -- one run per (host, port)
     {"id": "gobuster_ip_common", "tool": "gobuster", "loop": ("ip", "port"), "parse": "gobuster",
      "template": "gobuster dir -u $IPS:$ports -w /usr/share/wordlists/dirb/common.txt"},
+    {"id": "gobuster_ip_small", "tool": "gobuster", "loop": ("ip", "port"), "parse": "gobuster",
+     "template": "gobuster dir -u $IPS:$ports -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt"},
     {"id": "gobuster_ip_medium", "tool": "gobuster", "loop": ("ip", "port"), "parse": "gobuster",
      "template": "gobuster dir -u $IPS:$ports -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt"},
     {"id": "gobuster_ip_medium_ext", "tool": "gobuster", "loop": ("ip", "port"), "parse": "gobuster",
@@ -359,17 +361,25 @@ def parse_ports(raw: str):
 
 
 def validate_hostname(raw: str) -> str:
-    """Validate a SINGLE hostname for the $hostname variable."""
+    """Validate a SINGLE hostname for the $hostname variable. An optional
+    http:// or https:// scheme is allowed and preserved (so it flows straight
+    into gobuster's -u, e.g. https://target.local:$ports)."""
     h = raw.strip()
     if not h:
         raise ValueError("Empty hostname")
     if "," in h:
         raise ValueError("Only a single hostname is allowed")
-    if any(ch in _META for ch in h) or " " in h:
+
+    # Split off an optional scheme; validate only the host part.
+    m = re.match(r"^(https?://)(.*)$", h, re.I)
+    scheme, host = (m.group(1), m.group(2)) if m else ("", h)
+    host = host.rstrip("/")
+
+    if any(ch in _META for ch in host) or " " in host:
         raise ValueError("Hostname contains illegal characters")
-    if not _HOSTNAME_RE.match(h):
-        raise ValueError(f"'{h}' is not a valid hostname")
-    return h
+    if not _HOSTNAME_RE.match(host):
+        raise ValueError(f"'{host}' is not a valid hostname")
+    return scheme + host
 
 
 def write_ip_file(scan_id: int, ips: list) -> str:
